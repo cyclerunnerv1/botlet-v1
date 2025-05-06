@@ -2,13 +2,18 @@ import json
 import os
 from datetime import datetime
 from trade_logger import log_trade
-
+from flask import Flask, request, jsonify
+from commander import handle_command
 # === File Paths ===
 MEMORY_PATH = "memory"
 LADDER_PATH = os.path.join(MEMORY_PATH, "ladder.json")
 CAPITAL_PATH = os.path.join(MEMORY_PATH, "capital.txt")
 STOPLOSS_PATH = os.path.join(MEMORY_PATH, "stoploss.txt")
 TRADE_LOG_PATH = os.path.join(MEMORY_PATH, "trade_log.txt")
+
+# path
+
+app = Flask(__name__)
 
 # === Botlet Core Logic ===
 def load_capital():
@@ -59,5 +64,20 @@ def main():
         if action in ["buy", "sell"]:
             capital = log_trade(action, price, capital)
 
-if __name__ == "__main__":
-    main()
+@app.route('/')
+def root():
+    return 'Botlet is alive'
+
+@app.route('/webhook/trigger', methods=['POST'])
+def receive_trigger():
+    data = request.json
+    try:
+        event = data.get("event", "")
+        details = data.get("details", {})
+        handle_command(f"/{event}", list(details.values()))
+        return jsonify({"status": "received"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)

@@ -1,29 +1,26 @@
 # commander.py
-import datetime
+from telegram_webhook import send_telegram_message
+from trigger_logger import log_trigger
 
-def handle_force_command(cmd):
-    try:
-        _, direction = cmd.strip().split()
-        if direction not in ["long", "short"]:
-            return "Use /force long or /force short."
-        with open("trigger_log.txt", "a") as f:
-            f.write(f"[FORCED TRADE] {direction.upper()} at {datetime.datetime.now()}\n")
-        return f"Force {direction} signal logged."
-    except:
-        return "Invalid format. Use: /force long or /force short"
-
-def handle_halt_command():
-    try:
-        with open("halt.flag", "w") as f:
-            f.write("HALT TRADES")
-        return "All trading halted. 'halt.flag' created."
-    except:
-        return "Failed to create halt flag."
-
-def get_status_report():
-    try:
-        with open("trade_log.txt", "r") as f:
-            lines = f.readlines()[-3:]  # last 3 entries
-        return "Last 3 trades:\n" + "".join(lines)
-    except:
-        return "No trade logs found."
+def handle_command(command, args):
+    if command == "/xscore":
+        try:
+            score = int(args[0])
+            msg = f"X-Score updated to {score}."
+            log_trigger("X-Score Update", f"{score}")
+            send_telegram_message(msg)
+        except:
+            send_telegram_message("Invalid X-Score value.")
+    elif command == "/ladder":
+        direction = args[0].lower()
+        if direction in ["short", "long"]:
+            log_trigger("Ladder Update", direction)
+            send_telegram_message(f"Ladder direction switched to {direction.upper()}.")
+        else:
+            send_telegram_message("Invalid ladder direction. Use: short or long.")
+    elif command == "/forecast":
+        status = " ".join(args)
+        log_trigger("Forecast Update", status)
+        send_telegram_message(f"Forecast updated: {status}")
+    else:
+        send_telegram_message("Unknown command.")
