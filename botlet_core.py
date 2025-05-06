@@ -4,6 +4,10 @@ from datetime import datetime
 from trade_logger import log_trade
 from flask import Flask, request, jsonify
 from commander import handle_command
+import threading
+import time
+import requests
+
 # === File Paths ===
 MEMORY_PATH = "memory"
 LADDER_PATH = os.path.join(MEMORY_PATH, "ladder.json")
@@ -14,6 +18,19 @@ TRADE_LOG_PATH = os.path.join(MEMORY_PATH, "trade_log.txt")
 # path
 
 app = Flask(__name__)
+
+ # === Heart beat ===
+def heartbeat():
+    while True:
+        try:
+            requests.get("https://web-production-0c97c.up.railway.app/")
+        except Exception as e:
+            print("Heartbeat failed:", e)
+        time.sleep(300)  # Ping every 5 minutes
+
+# Start the heartbeat in the background
+threading.Thread(target=heartbeat, daemon=True).start()
+
 
 # === Botlet Core Logic ===
 def load_capital():
